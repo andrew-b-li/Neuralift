@@ -50,34 +50,35 @@ export default class MainScene extends Phaser.Scene {
 
     this.topCap = this.add.image(x, this.bottomCap.y - this.fullHeight, 'top-cap').setOrigin(0.5, 1)
 
-    //this.setMeterPercentage(0.75)
-    //this.setMeterPercentageAnimated(0)
+    this.setMeterPercentage(0)
+
+    //this.setMeterPercentageAnimated(0.15)
+
   }
 
   setMeterPercentage(percent = 1) {
-    const height = -this.fullHeight * percent
-    this.middle.displayHeight = height
+    const height = this.fullHeight * percent
+    this.middle.displayHeight = - height
     this.topCap.y = this.middle.y - this.middle.displayHeight
   }
 
-  // setMeterPercentageAnimated(percent = 1, duration = 1000) {
-  //   const width = this.fullWidth * percent
+  setMeterPercentageAnimated(percent = 1, duration = 5000) {
+    const height = -this.fullHeight * percent
 
-  //   this.tweens.add({
-  //     targets: this.middle,
-  //     //displayWidth: width,
-  //     displayLength: length,
-  //     duration,
-  //     ease: Phaser.Math.Easing.Sine.Out,
-  //     onUpdate: () => {
-  //       this.rightCap.x = this.middle.x + this.middle.displayWidth
+    this.tweens.add({
+      targets: this.middle,
+      displayHeight: height,
+      duration,
 
-  //       this.leftCap.visible = this.middle.displayWidth > 0
-  //       this.middle.visible = this.middle.displayWidth > 0
-  //       this.rightCap.visible = this.middle.displayWidth > 0
-  //     }
-  //   })
-  // }
+      ease: Phaser.Math.Easing.Sine.Out,
+      onUpdate: () => {
+        this.topCap.y = this.middle.y - this.middle.displayHeight
+        this.bottomCap.visible = this.middle.displayHeight > 0
+        this.middle.visible = this.middle.displayHeight > 0
+        this.topCap.visible = this.middle.displayHeight > 0
+      }
+    })
+  }
 
 
   update() {
