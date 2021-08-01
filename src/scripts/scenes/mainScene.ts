@@ -7,11 +7,18 @@ export default class MainScene extends Phaser.Scene {
   bottomCap: Phaser.GameObjects.Image
   middle: Phaser.GameObjects.Image
   topCap: Phaser.GameObjects.Image
+  bottomShadowCap: Phaser.GameObjects.Image
+  middleShadow: Phaser.GameObjects.Image
+
   fullHeight: number
+  cursors: Phaser.Types.Input.Keyboard.CursorKeys
+  spacebar: Phaser.Input.Keyboard.Key
+  score: number
 
   constructor() {
     super({ key: 'MainScene' })
     this.fullHeight = 300
+    this.score = 0
   }
 
   create() {
@@ -19,7 +26,7 @@ export default class MainScene extends Phaser.Scene {
     this.fpsText = new FpsText(this)
 
     // display the Phaser.VERSION
-    
+
     this.add
       .text(this.cameras.main.width - 15, 15, `Phaser v${Phaser.VERSION}`, {
         color: '#000000',
@@ -34,45 +41,51 @@ export default class MainScene extends Phaser.Scene {
 
     // background shadow
 
-    const bottomShadowCap = this.add.image(x, y, 'bottom-cap-shadow').setOrigin(0.5, 0)
+    this.bottomShadowCap = this.add.image(x, y, 'bottom-cap-shadow').setOrigin(0.5, 0)
 
-    const middleShadowCap = this.add.image(x, bottomShadowCap.y - this.fullHeight, 'middle-shadow').setOrigin(0.5, 0)
+    this.middleShadow = this.add.image(x, this.bottomShadowCap.y - this.fullHeight, 'middle-shadow').setOrigin(0.5, 0)
 
-    middleShadowCap.displayHeight = this.fullHeight
+    this.middleShadow.displayHeight = this.fullHeight
 
-    this.add.image(x, middleShadowCap.y, 'top-cap-shadow').setOrigin(0.5, 1)
+    this.add.image(x, this.middleShadow.y, 'top-cap-shadow').setOrigin(0.5, 1)
 
     // health bar
 
     this.bottomCap = this.add.image(x, y, 'bottom-cap').setOrigin(0.5, 0)
-    
-    this.middle = this.add.image(this.bottomCap.x, this.bottomCap.y, 'middle').setOrigin(0.5, 0)
 
     this.topCap = this.add.image(x, this.bottomCap.y - this.fullHeight, 'top-cap').setOrigin(0.5, 1)
 
-    this.setMeterPercentage(0)
+    this.middle = this.add.image(this.topCap.x, this.topCap.y, 'middle').setOrigin(0.5, 0)
 
-    //this.setMeterPercentageAnimated(0.15)
+    this.setMeterPercentage(this.score)
 
+    console.log(this.score)
+
+    this.spacebar = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.SPACE)
   }
 
   setMeterPercentage(percent = 1) {
+    const topDrop = this.fullHeight * (1-percent)
     const height = this.fullHeight * percent
-    this.middle.displayHeight = - height
-    this.topCap.y = this.middle.y - this.middle.displayHeight
+    this.topCap.y = this.topCap.y + topDrop
+    this.middle.y = this.topCap.y
+    this.middle.displayHeight = height
   }
 
-  setMeterPercentageAnimated(percent = 1, duration = 5000) {
-    const height = -this.fullHeight * percent
+  setMeterPercentageAnimated(percent = 1, duration = 1000) {
+    const topDrop = this.fullHeight * (1-percent)
+    const height = this.fullHeight * percent
 
     this.tweens.add({
-      targets: this.middle,
-      displayHeight: height,
+      targets: this.topCap,
+      y: this.middleShadow.y + topDrop,
       duration,
 
       ease: Phaser.Math.Easing.Sine.Out,
       onUpdate: () => {
-        this.topCap.y = this.middle.y - this.middle.displayHeight
+
+        this.middle.y = this.topCap.y
+        this.middle.displayHeight = this.bottomCap.y - this.topCap.y 
         this.bottomCap.visible = this.middle.displayHeight > 0
         this.middle.visible = this.middle.displayHeight > 0
         this.topCap.visible = this.middle.displayHeight > 0
@@ -80,8 +93,12 @@ export default class MainScene extends Phaser.Scene {
     })
   }
 
-
   update() {
     this.fpsText.update()
+
+    if (Phaser.Input.Keyboard.JustDown(this.spacebar)) {
+      this.score = this.score + 0.20;
+      this.setMeterPercentageAnimated(this.score)
+    }
   }
 }
