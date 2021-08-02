@@ -94,6 +94,8 @@ export default class MainScene extends Phaser.Scene {
     this.events.once('fullBar', this.fullHandler, this)
   }
 
+
+
   fullHandler() {
     console.log('full handler')
     this.lifter.anims.play('success')
@@ -103,12 +105,9 @@ export default class MainScene extends Phaser.Scene {
   }
 
   finishHandler() {
-    console.log('finish handler')
-    if (this.score < 1) {
+    if (this.score == 0) {
       this.lifter.anims.play('idle')
-      console.log('idle')
     }
-
   }
 
   setMeterPercentage(percent = 1) {
@@ -133,7 +132,11 @@ export default class MainScene extends Phaser.Scene {
         this.bottomCap.visible = this.middle.displayHeight > 0
         this.middle.visible = this.middle.displayHeight > 0
         this.topCap.visible = this.middle.displayHeight > 0
-      }
+      },
+      onComplete: () => {
+        if (this.topCap.y == this.bottomCap.y){
+          this.finishHandler()}
+        }
     })
   }
 
