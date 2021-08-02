@@ -149,7 +149,12 @@ export default class MainScene extends Phaser.Scene {
         this.justWon = false
         this.lifter.anims.play('finish')
       } else {
-        this.score = this.score + 0.2
+        const gain = Phaser.Math.FloatBetween(0,0.3)
+        console.log(gain)
+        this.score = this.score + gain
+        if (this.score > 1){
+          this.score = 1
+        }
         this.setMeterPercentageAnimated(this.score)
       }
     }
