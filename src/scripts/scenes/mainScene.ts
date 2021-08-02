@@ -1,4 +1,4 @@
-import PhaserLogo from '../objects/phaserLogo'
+import { MouseConstraint } from 'matter'
 import FpsText from '../objects/fpsText'
 
 export default class MainScene extends Phaser.Scene {
@@ -14,6 +14,15 @@ export default class MainScene extends Phaser.Scene {
   cursors: Phaser.Types.Input.Keyboard.CursorKeys
   spacebar: Phaser.Input.Keyboard.Key
   score: number
+  lifter: Phaser.GameObjects.Sprite
+
+  idleFrames: Phaser.Types.Animations.AnimationFrame[]
+  successFrames: Phaser.Types.Animations.AnimationFrame[]
+  finishFrames: Phaser.Types.Animations.AnimationFrame[]
+
+  justWon: boolean
+
+  chear: Phaser.Sound.BaseSound
 
   constructor() {
     super({ key: 'MainScene' })
@@ -22,38 +31,57 @@ export default class MainScene extends Phaser.Scene {
   }
 
   create() {
-    new PhaserLogo(this, this.cameras.main.width / 2, 0)
-    this.fpsText = new FpsText(this)
+    //this.fpsText = new FpsText(this)
 
-    // display the Phaser.VERSION
+    this.chear = this.sound.add('chear')
 
-    this.add
-      .text(this.cameras.main.width - 15, 15, `Phaser v${Phaser.VERSION}`, {
-        color: '#000000',
-        fontSize: '24px'
-      })
-      .setOrigin(1, 0)
+    // sprite
+    const spriteY = this.cameras.main.height * 0.55
+    const spriteX = this.cameras.main.width * 0.5
+
+    this.lifter = this.add.sprite(spriteX, spriteY, 'lifter', '0-1.png')
+    this.lifter.setScale(1.5, 1.5)
+
+    //this.frameNames = this.anims.generateFrameNames('lifter', { prefix: '1-', end: 34, suffix: '.png'})
+
+    //idle animation - play once
+    this.idleFrames = [
+      { key: 'lifter', frame: '0-1.png' },
+      { key: 'lifter', frame: '0-2.png' },
+      { key: 'lifter', frame: '0-3.png' },
+      { key: 'lifter', frame: '0-2.png' }
+    ]
+    this.anims.create({ key: 'idle', frames: this.idleFrames, frameRate: 2, repeat: -1 })
+    this.lifter.anims.play('idle')
+
+    this.successFrames = this.anims.generateFrameNames('lifter', { prefix: '1-', start: 1, end: 30, suffix: '.png' })
+    this.anims.create({ key: 'success', frames: this.successFrames, frameRate: 5 })
+    //this.lifter.anims.play('success');
+
+    this.finishFrames = this.anims.generateFrameNames('lifter', { prefix: '1-', start: 31, end: 34, suffix: '.png' })
+    this.anims.create({ key: 'finish', frames: this.finishFrames, frameRate: 5})
+    //this.lifter.anims.play('finish');
 
     // bar
-
-    const y = this.cameras.main.height * 0.75
-    const x = this.cameras.main.width * 0.75
+    const barY = this.cameras.main.height * 0.75
+    const barX = this.cameras.main.width * 0.75
 
     // background shadow
+    this.bottomShadowCap = this.add.image(barX, barY, 'bottom-cap-shadow').setOrigin(0.5, 0)
 
-    this.bottomShadowCap = this.add.image(x, y, 'bottom-cap-shadow').setOrigin(0.5, 0)
-
-    this.middleShadow = this.add.image(x, this.bottomShadowCap.y - this.fullHeight, 'middle-shadow').setOrigin(0.5, 0)
+    this.middleShadow = this.add
+      .image(barX, this.bottomShadowCap.y - this.fullHeight, 'middle-shadow')
+      .setOrigin(0.5, 0)
 
     this.middleShadow.displayHeight = this.fullHeight
 
-    this.add.image(x, this.middleShadow.y, 'top-cap-shadow').setOrigin(0.5, 1)
+    this.add.image(barX, this.middleShadow.y, 'top-cap-shadow').setOrigin(0.5, 1)
 
     // health bar
 
-    this.bottomCap = this.add.image(x, y, 'bottom-cap').setOrigin(0.5, 0)
+    this.bottomCap = this.add.image(barX, barY, 'bottom-cap').setOrigin(0.5, 0)
 
-    this.topCap = this.add.image(x, this.bottomCap.y - this.fullHeight, 'top-cap').setOrigin(0.5, 1)
+    this.topCap = this.add.image(barX, this.bottomCap.y - this.fullHeight, 'top-cap').setOrigin(0.5, 1)
 
     this.middle = this.add.image(this.topCap.x, this.topCap.y, 'middle').setOrigin(0.5, 0)
 
@@ -62,30 +90,46 @@ export default class MainScene extends Phaser.Scene {
     console.log(this.score)
 
     this.spacebar = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.SPACE)
+
+    this.events.once('fullBar', this.fullHandler, this)
+  }
+
+  fullHandler() {
+    console.log('full handler')
+    this.lifter.anims.play('success')
+    this.chear.play()
+    this.events.once('fullBar', this.fullHandler, this)
+    this.events.once('finish', this.finishHandler, this)
+  }
+
+  finishHandler() {
+    console.log('finish handler')
+    if (this.score < 1) {
+      this.lifter.anims.play('idle')
+      console.log('idle')
+    }
+
   }
 
   setMeterPercentage(percent = 1) {
-    const topDrop = this.fullHeight * (1-percent)
+    const topDrop = this.fullHeight * (1 - percent)
     const height = this.fullHeight * percent
     this.topCap.y = this.topCap.y + topDrop
     this.middle.y = this.topCap.y
     this.middle.displayHeight = height
   }
 
-  setMeterPercentageAnimated(percent = 1, duration = 1000) {
-    const topDrop = this.fullHeight * (1-percent)
+  setMeterPercentageAnimated(percent = 1, duration = 500) {
+    const topDrop = this.fullHeight * (1 - percent)
     const height = this.fullHeight * percent
 
     this.tweens.add({
       targets: this.topCap,
       y: this.middleShadow.y + topDrop,
-      duration,
-
       ease: Phaser.Math.Easing.Sine.Out,
       onUpdate: () => {
-
         this.middle.y = this.topCap.y
-        this.middle.displayHeight = this.bottomCap.y - this.topCap.y 
+        this.middle.displayHeight = this.bottomCap.y - this.topCap.y
         this.bottomCap.visible = this.middle.displayHeight > 0
         this.middle.visible = this.middle.displayHeight > 0
         this.topCap.visible = this.middle.displayHeight > 0
@@ -94,11 +138,23 @@ export default class MainScene extends Phaser.Scene {
   }
 
   update() {
-    this.fpsText.update()
+    //this.fpsText.update()
 
     if (Phaser.Input.Keyboard.JustDown(this.spacebar)) {
-      this.score = this.score + 0.20;
-      this.setMeterPercentageAnimated(this.score)
+      if (this.justWon == true) {
+        this.setMeterPercentageAnimated(this.score)
+        this.justWon = false
+        this.lifter.anims.play('finish')
+      } else {
+        this.score = this.score + 0.2
+        this.setMeterPercentageAnimated(this.score)
+      }
+    }
+
+    if (this.score >= 1) {
+      this.events.emit('fullBar')
+      this.score = 0.0
+      this.justWon = true
     }
   }
 }

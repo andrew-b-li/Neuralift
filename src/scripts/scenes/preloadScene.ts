@@ -21,6 +21,10 @@ export default class PreloadScene extends Phaser.Scene {
 	  this.load.image('bottom-cap-shadow', 'assets/img/bar/barVertical_shadow_bottom.png')
 	  this.load.image('middle-shadow', 'assets/img/bar/barVertical_shadow_mid.png')
 	  this.load.image('top-cap-shadow', 'assets/img/bar/barVertical_shadow_top.png')
+
+    this.load.multiatlas('lifter', 'assets/lifter.json', 'assets')
+
+    this.load.audio('chear', 'assets/chear3.mp3')
   }
 
   create() {
